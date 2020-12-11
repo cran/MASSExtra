@@ -1,0 +1,415 @@
+---
+title: "Rationale for MASSExtra"
+author: "Bill Venables"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+  html_vignette: null
+  html_document:
+    df_print: paged
+vignette: >
+  %\VignetteIndexEntry{Rationale for MASSExtra} 
+  %\VignetteEncoding{UTF-8} 
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r presetup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE,
+                      comment = "",
+                      message = FALSE,
+                      warning = FALSE)
+old_plot_new <- getHook("plot.new")
+old_before_plot_new <- getHook("before.plot.new")
+setHook("plot.new", list(), "replace")
+setHook("before.plot.new", rev(old_before_plot_new)[1], "replace")
+old_par <- par(no.readonly = TRUE)
+old_options <- options()
+
+library(tidyverse)
+old_theme <- theme_get()
+```
+
+# Preamble
+
+This extension package to the classical `MASS` package (Venables &
+Ripley, of ancient lineage), whose origins go back to nearly 30 years,
+comes about for a number of reasons.
+
+Firstly, in my teaching I found I was using some of the old functions
+in the package with consistently different argument settings to the
+defaults.  I was also interested in supplying various convenience
+extensions that simplified teaching and including various tweaks to
+improve the interface.  Examples follow below.
+
+Secondly, I wanted to provide a few functions that were mainly useful
+as programming examples.  For example, the function `zs` and its
+allies `zu`, `zq` and `zr` are mainly alternatives to `base::scale`,
+but they can be used to show how to write functions that can be used
+in fitting models in such a way that they work as they should when the
+fitted model object is used for prediction with new data.
+
+### Masking `select` from other packages
+
+Finally, there is the perennial `select` problem.  When `MASS` is used
+with other packages, such as `dplyr` the `select` function can easily
+be masked, causing confusion for users.  `MASS::select` is rarely
+used, but `dplyr::select` is fundamental.  There are standard ways of
+managing this kind of masking, but what we have done in `MASSExtra` is
+to export the more common functions used from `MASS` along with the
+extensions, in such a way that users will not need to have `MASS`
+attached to the search path at all, and hence masking is unlikely.
+
+The remainder of this document will do a walk-through of some of the
+new functions provided by the package.  We begin by setting the
+computational context:
+
+```{r packages_etc}
+suppressPackageStartupMessages({
+  library(visreg)
+  library(knitr)
+  library(tidyverse)
+  library(patchwork)
+  library(MASSExtra)
+})
+options(knitr.kable.NA = "")
+theme_set(theme_bw() + theme(plot.title = element_text(hjust = 0.5)))
+```
+
+
+# Amble
+
+We now consider some of the extensions that the package offers to the
+originals.  Most of the extensions will have a name that includes an
+underscore of two somewhere to distinguish it from the V&R original.
+Note that the original version is _also_ exported so that scripts that
+use it may do so without change, via the new package.
+
+## The `box_cox` extensions
+
+This original version, `boxcox` has a fairly rigid display for the
+plotted output which has been changed to give a more easily
+appreciated result.  The $y-$axis has been changed to give the
+likelihood-ratio statistic rather than the log-likelihood, and for the
+$x-$axis some attempt has been made to focus on the crucial region for
+the transformation parameter, $\lambda$,
+
+The following example shows the old and new plot versions for a simple
+example.
+
+```{r setup, fig.height = 5, fig.width = 10, out.width="100%", fig.cap="Box-cox, old and new displays"}
+par(mfrow = c(1, 2))
+mod0 <- lm(MPG.city ~ Weight, Cars93)
+boxcox(mod0)  ## MASS
+box_cox(mod0) ## MASSExtra tweak
+```
+
+In addition, there are functions `bc` to evaluate the transformation
+for a given exponent, and a function `lambda` which finds the optimum
+exponent (not that a precise exponent will usually be needed).
+
+It is interesting to see how in this instance the transformation can
+both straighten the relationship and provide a scale in which the
+variance is more homogeneous.  See Figure 2.
+
+```{r, fig.height=5, fig.width=10, out.width="100%", fig.cap="The Box-Cox transformation effect"}
+p0 <- ggplot(Cars93) + aes(x = Weight) + geom_point(colour = "#2297E6")  + xlab("Weight (lbs)") +
+  geom_smooth(se = FALSE, method = "loess", formula = y ~ x, size=0.7, colour = "black")
+p1 <- p0 + aes(y = MPG.city) + ylab("Miles per gallon (MPG)") + ggtitle("Untransformed response")
+p2 <- p0 + aes(y = bc(MPG.city, lambda(mod0))) + ggtitle("Transformed response") + 
+  ylab(bquote(bc(MPG, .(round(lambda(mod0), 2)))))
+p1 + p2
+```
+
+A more natural scale to use, consistent with the Box-Cox suggestion,
+would be the reciprocal.  For example we could use $\mbox{GPM} =
+100/\mbox{MPG}$ the "gallons per 100 miles" scale, which would have
+the added benefit of being more-or-less what the rest of the world
+uses to gauge fuel efficiency outside the USA.  Readers should try
+this for themselves.
+
+## Stepwise model building extensions
+
+The primary `MASS` functions for refining linear models and their
+allies are `dropterm` and `stepAIC`.  The package provides a few
+extensions to these, but mainly a change of defaults in the argument
+settings.
+
+1. `drop_term` is a front-end to `MASS::dropterm` with a few tweaks.
+   By default the result is arranged in sorted order, i.e. with
+   `sorted = TRUE`, and also by default with `test = TRUE` (somewhat
+   in defiance of much advice to the contrary given by experienced
+   practitioners: _caveat emptor!_).
+   
+   The user may specify the test to use in the normal way, but the
+   default test is decided by an ancillary generic function,
+   `default_test`, which guesses the appropriate test from the object
+   itself.  This is an S3 generic and further methods can be supplied
+   for new fitted model objects.
+   
+   There is also a function `add_term` which provides similar
+   enhancements to those provided by `drop_term`.  In this case, of
+   course, the consequences of _adding_ individual terms to the model
+   are displayed, rather than of _dropping_ them.  It follows that
+   using `add_term` you will always need to provide a scope
+   specification, that is, some specification
+   of what extra terms are possible additions.  
+
+   In addition `drop_term` and `add_term` return an object which
+   retains information on the criterion used, `AIC`, `BIC`, `GIC` (see
+   below) or some specific penalty value `k`.  The object also has a
+   class `"drop_term"` for which a `plot` method is provided.  Both
+   the `plot` and `print` methods display the criterion.  See the
+   example below for how this is done.
+   
+1. `step_AIC` is a front-end to `MASS::stepAIC` with the default
+   argument `trace = FALSE` set.  This may of course be over-ruled,
+   but it seems the most frequent choice by users, anyway.  In
+   addition the actual criterion used, by dafault `k = 2`, i.e. AIC,
+   is retained with the result and passed on to methods in much the
+   same say as for `drop_term` above.
+   
+   Since the (default) criterion name is encoded in the function name,
+   two further versions are supplied, namely `step_BIC` and `step_GIC`
+   (again, see below), which use a different, and obvious, default
+   criterion.
+   
+   In any of `step_AIC`, `step_BIC` or `step_GIC` a different value of
+   `k` may be specified in which case that value of `k` is retained
+   with the object and displayed as appropriate in further methods.
+   
+   Finally in any of these functions `k` may be specified either as a
+   numeric penalty, such as `k = 4` for example, or by character
+   string `k = "AIC"` or `k = "BIC"` with an obvious meaning in either
+   case.
+   
+1. Criteria.  The __Akaike Information Criterion__, AIC, corresponds
+   to a penalty `k = 2` and the __Bayesian Information Criterion__,
+   BIC, corresponds to `k = log(n)` where `n` is the sample size.  In
+   addition to these two the present functions offer an intermediate
+   default penalty `k = (2 + log(n))/2` which is "not too strong and
+   not too weak", making it the __Goldilocks Information Criterion__,
+   GIC.  There is also a standalone function `GIC` to evaluate this
+   `k` if need be.
+   
+   This suggestion appears to be original, but _no particular claim is
+   made for it_ other than with intermediate to largish data sets it
+   has proved useful for exploratory purposes in our
+   experience.  
+   
+   Our strong advice is that these tools should __*only*__ be used for
+   exploratory purposes in any case, and should __*never*__ be used in
+   isolation.  They have a well-deserved very negative reputation when
+   misused, as they commonly are.
+   
+## Examples
+
+We consider the well-known (and much maligned) Boston house price
+data.  See `?Boston`.  We begin by fitting a model that has more terms
+in it than the usual model, as it contains a few extra quadratic
+terms, including some key linear by linear interactions.
+
+```{r, fig.width=8, fig.height=6, fig.align="center", out.width="75%"}
+big_model <- lm(medv ~ . + (rm + tax + lstat + dis)^2 + poly(dis, 2) + poly(rm, 2) +
+                   poly(tax, 2) + poly(lstat, 2), Boston)
+big_model %>% drop_term(k = "GIC") %>% plot() %>% kable(booktabs=TRUE, digits=3)
+```
+
+Unlike `MASS::dropterm`, the table shows the terms beginning with the
+most important ones, that is those which, if dropped, would _increase_
+the criterion and ending with those of least looking importance, that
+is those whose removal would most _decrease_ the criterion.  And also
+note that here we are using the `GIC`, which is displayed in the
+output.
+
+Note particularly that rather than give the _value_ of the criterion
+by default the table and plot show _change_ in the criterion which
+would result if the term is removed from the model at that point.
+This is a more meaningful quantity, and invariant with respect to the
+way in which the log-likelihood is defined.
+
+The `plot` method gives a graphical view of the same key bits of
+information, in the same vertical order as given in the table.  Terms
+whose removal would (at this point) improve the model are shown in
+_red_ and those which would not, and hence should (again, at this
+point) be retained are shown in _blue_.
+
+With all stepwise methods it is critically important to notice that
+the whole picture can change once any change is made to the current
+model.  This terms which appear "promising" at this stage may not seem
+so once any variable is removed from the model or some other variable
+brought into it.  This is a notoriously tricky area for the
+inexperienced.
+
+Notice that the `plot` method returns the original object, which can
+then be passed on via a pipe to more operations.  (`kable` does not,
+so this pipe sequence cannot be changed.)
+
+We now consider a refinement of this model by stepwise means, but
+rather than use the large model as the starting point, we begin with a
+more modest one which has no quadratic terms.
+
+```{r, fig.width=8, fig.height=6, fig.align="center", out.width="75%"}
+base_model <- lm(medv ~ ., Boston)
+gic_model <- step_GIC(base_model, scope = list(lower = ~1, upper = formula(big_model)))
+drop_term(gic_model) %>% plot() %>% kable(booktabs = TRUE, digits = 3)
+```
+
+The model is likely to be over-fitted.  To follow up on this we could
+look at profiles of the fitted terms as an informal way of model
+'criticism'.
+
+```{r, fig.width=14, fig.height=6, fig.align="center", out.width="100%", fig.cap="Two component visualisations for the Boston house price model"}
+capture.output(suppressWarnings({
+   g1 <- visreg(gic_model, "dis", plot = FALSE)
+   g2 <- visreg(gic_model, "lstat", plot = FALSE)
+   plot(g1, gg = TRUE) + plot(g2, gg = TRUE) 
+})) -> void
+```
+
+The case for curvature appears to be fairly weak, in each case with
+departure from a straight line dependence depending on a relatively
+few observations with high values for the predictor.  (Notice how hard
+you have to work to prevent `visreg` from generating unwanted output.)
+
+As an example of `add_term`, consider going from what we have called
+the `base_model` to the `big_model`, or at least what might be the
+initial step:
+
+```{r, fig.width=8, fig.height=6, fig.align="center", out.width="75%"}
+add_term(base_model, scope = formula(big_model), k = "gic") %>% 
+   plot() %>% kable(booktabs = TRUE, digits = 3)
+```
+
+So in this case, your best first step would be to _add_ the term which
+most decreases the criterion, that is, the one nearest the bottom of
+the table (or display).
+
+### Non-gaussian models
+
+For a non-gaussian model consider the Quine data (`?quine`) example
+discussed in the _MASS_ book.  We begin by fitting a full negative
+binomial model and refine it using a stepwise algorithm.
+
+```{r}
+quine_full <- glm.nb(Days ~ Age*Eth*Sex*Lrn, data = quine)
+drop_term(quine_full) %>% kable(booktabs = TRUE, digits = 4)
+quine_gic <- step_GIC(quine_full)
+drop_term(quine_gic) %>% kable(booktabs = TRUE, digits = 4)
+```
+
+So GIC refinement has led to the same model as in the _MASS_ book,
+which in more understandable form would be written `Days ~ Sex/(Age +
+Eth*Lrn)`.  Note also that the default test is in this case
+the likelihood ratio test.  
+
+For a different example, consider an alternative way to model the MPG
+data, rather than transforming to an inverse scale, using a
+generalized linear model with an inverse link and a gamma response.
+
+```{r}
+mpg0 <- glm(MPG.city ~ Weight + Cylinders + EngineSize + Origin, 
+            family = Gamma(link = "inverse"), data = Cars93)
+drop_term(mpg0) %>% kable(booktabs = TRUE, digits = 3)
+mpg_gic <- step_down(mpg0, k = "gic")      ## simple backward elimination, mainly used for GLMMs
+drop_term(mpg_gic) %>% kable(booktabs = TRUE, digits = 3)
+```
+
+We can see something of how well the final model is performing by
+looking at a slightly larger model fitted on the fly in `ggplot`:
+
+```{r, fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="MPG model using a Gamma family with inverse link"}
+ggplot(Cars93) + aes(x = Weight, y = MPG.city, colour = Cylinders) + geom_point() +
+   geom_smooth(method = "glm", method.args = list(family = Gamma), formula = y ~ x) +
+   ylab("Miles per gallon (city driving)") + scale_colour_brewer(palette = "Dark2")
+```
+
+The function `step_down` is a simple implementation of backward
+elimination with the sole virtue that it works for (Generalised)
+Linear Mixed Models, or at least for the fixed effect component of
+them, whereas other stepwise methods do not (yet).  As fitting GLMMs
+can be very slow, going through a full stepwise process could be very
+time consuming in any case.
+
+## Scaling functions
+
+When a function such as `base::scale`, `stats:poly` or `splines:ns`
+(also exported from `MASSExtra`) is used in modelling it is important
+that the fitted model object has enough information so that when it is
+used in prediction for new data, the same transformation can be put in
+place with the new predictor variable values.  Setting up functions in
+such a way to enable this is a slightly tricky exercise.  It involves
+writing a method function for the S3 generic function
+`stats::makepredictcall`.  To illustrate this we have supplied four
+simple functions that
+employ the technique.  
+
+* `zs` ("z-score") is essentially the same as `base::scale` with the default argument settings,
+* `zu` allows re-scaling to a fixed range of [0, 1], often used in neural network models,
+* `zq` allows a quantile scaling where the location is the lower quartile and the scale is the inter-quartile range. 
+   In other words, the scaling is to [0,1] _within the box_ of a boxplot.  _(Go figure.)_
+* `zr` allows a "robust" scaling where the location is the median and the scale uses `stats::mad`
+
+The only real interest in these very minor convenience functions lies
+in how they are programmed.  The following chain from the package code
+sets out the steps.
+
+```{r}
+dput(MASSExtra:::makepredictcall.normalise) ## exported only as an S3 method
+dput(.normalise)                            ## an exported helper, but with a hidden name
+dput(zs)                                    ## the scale() equivalent
+dput(zq)                                    ## the 'boxplot scaling' (based on quantiles)
+```
+
+# Postamble
+
+In this final section we mainly give a list of functions provided by
+the package, and their origins.
+
+We begin by giving a list of functions in the `MASS` package which are
+_not_ re-exported from the `MASSExtra` package.  If you need any of
+these you will need either to attach the `MASS` package itself, or use
+the qualified form `MASS::<name>`.
+
+```{r, echo=FALSE}
+setdiff(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sort() %>%  noquote()
+```
+
+The following objects _are_ re-exported from the `MASSExtra` package,
+and hence may be used directly, if needed.
+
+```{r, echo=FALSE}
+intersect(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sort() %>%  noquote()
+```
+
+The following functions are _new_ to the `MASSExtra` package, some of
+which are obviously refinements of their `MASS` workhorse counterparts.
+
+```{r, echo=FALSE}
+setdiff(getNamespaceExports("MASSExtra"), getNamespaceExports("MASS")) %>% 
+   setdiff(getNamespaceExports("splines")) %>% 
+   grep("^[.]__T", ., invert = TRUE, value = TRUE) %>% ## exclude S4 class objects
+   sort() %>% noquote()
+```
+
+Finally the following objects are re-exported from `splines`:
+
+
+```{r, echo=FALSE}
+intersect(getNamespaceExports("MASSExtra"), getNamespaceExports("splines")) %>% sort() %>%  noquote()
+```
+
+
+Only four of the `MASS` data sets are included in `MASSExtra`, namely
+`Cars93`, `Boston`, `quine` and `whiteside`.  Other data sets from
+`MASS` itself will need to be accessed directly, e.g. `MASS::immer`.
+
+```{r cleanup, include=FALSE}
+setHook("plot.new", old_plot_new, "replace")
+setHook("before.plot.new", old_before_plot_new, "replace")
+par(old_par)
+options(old_options)
+theme_set(old_theme)
+```
+
