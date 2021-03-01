@@ -3,10 +3,10 @@ title: "Rationale for MASSExtra"
 author: "Bill Venables"
 date: "`r Sys.Date()`"
 output:
+  html_vignette: null
   pdf_document:
     includes:
       in_header: header.tex
-  html_vignette: null
   html_document:
     df_print: paged
 vignette: >
@@ -352,15 +352,75 @@ employ the technique.
 * `zr` allows a "robust" scaling where the location is the median and the scale uses `stats::mad`
 
 The only real interest in these very minor convenience functions lies
-in how they are programmed.  The following chain from the package code
-sets out the steps.
+in how they are programmed.  See the code itself for more details.
 
-```{r}
-dput(MASSExtra:::makepredictcall.normalise) ## exported only as an S3 method
-dput(.normalise)                            ## an exported helper, but with a hidden name
-dput(zs)                                    ## the scale() equivalent
-dput(zq)                                    ## the 'boxplot scaling' (based on quantiles)
+<!-- The following chain from the package code -->
+<!-- sets out the steps. -->
+
+<!-- ```{r} -->
+<!-- dput(MASSExtra:::makepredictcall.normalise) ## exported only as an S3 method -->
+<!-- dput(.normalise)                            ## an exported helper, but with a hidden name -->
+<!-- dput(zs)                                    ## the scale() equivalent -->
+<!-- dput(zq)                                    ## the 'boxplot scaling' (based on quantiles) -->
+<!-- ``` -->
+
+## Kernel density estimation
+
+Release 1.1.0 contains two functions for kernel density estimation: one- and two-dimensional.
+
+* `kde_1d` offers a similar functionality to `stats::density`, though with two additional
+  features that may be useful in some situations, namely
+  - The kernel function may be specified as an R function, as well as as a character
+    string to select from a preset list.  Users wishing to write a special kernel function
+    should do so in line with, for example `demoKde::kernelBiweight` or `demoKde::kernalGaussian`,
+    using the same argument list with the same intrinsic meanings for the arguments themselves.
+  - The kernel density estimate may be "folded" to emulate the effect of fitting a density with
+    a known finite range for the underlying distribution.  This amounts to fitting the kde initially
+    with unrestricted range and "folding back" the parts beyond the known range, adding them
+    on to the mirror image components inside the range.  This strategy appears to give a credible
+    result, though no particular claim is made for it on theoretical grounds.  See the examples.
+
+* `kde_2d` uses much the same computational ideas as in `MASS::kde2d` (due to Prof. Brian Ripley),
+  but uses an approximation that allows the algorithm to scale much better for both large data sets
+  and large resolution in the result.  Indeed the approximation improves as the resolution increases,
+  so the default size is now $512\times512$ rather than $25\times25$ as it is for `MASS::kde2d`.  This
+  function also allows the kernel function(s) to be either specified or user-defined, as for
+  `kde_1d` above.  Folding is not implemented, however.
+  
+Both functions produce objects with a class agreeing with the name of the calling function, and
+suitable `plot` and `print` methods are provided.
+
+Two examples follow.  The first shows (mainly) the surprising capacity for a log-transformation
+to amplify what is essentially a trivial effect into something that appears impressive!
+
+```{r, fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="A one-dimensional KDE of a predictor variable from the Boston data set"}
+
+Criminality <- with(Boston, log(crim))
+kcrim <- kde_1d(Criminality, n = 1024, kernel = demoKde::kernelBiweight)
+kcrim
+plot(kcrim)
 ```
+
+We now take this further into a two-dimensional example
+
+```{r, fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="A two-dimensional KDE using two predictors from the Boston data set"}
+Spaciousness <- with(Boston, sqrt(rm))
+kcrimrm <- kde_2d(Criminality, Spaciousness, n = 512, kernel = "opt")
+kcrimrm
+plot(kcrimrm, ## col = hcl.colors(25, rev = TRUE),
+     xlab = expression(italic(Criminality)),
+     ylab = expression(italic(Spaciousness)))
+contour(kcrimrm, col = "dark green", add = TRUE)
+```
+
+An even more deceptive plot uses `persp`:
+```{r, fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="A two-dimensional KDE presented as a perspective plot"}
+with(kcrimrm, persp(x, 10*y, 3*z, border="transparent", col = "powder blue",
+                    theta = 30, phi = 15, r = 100, scale = FALSE, shade = TRUE, 
+                    xlab = "Criminality", ylab = "Spaciousness", zlab = "kde"))
+```
+
+
 
 # Postamble
 

@@ -77,11 +77,26 @@ ggplot(Cars93) + aes(x = Weight, y = MPG.city, colour = Cylinders) + geom_point(
    geom_smooth(method = "glm", method.args = list(family = Gamma), formula = y ~ x) +
    ylab("Miles per gallon (city driving)") + scale_colour_brewer(palette = "Dark2")
 
-## -----------------------------------------------------------------------------
-dput(MASSExtra:::makepredictcall.normalise) ## exported only as an S3 method
-dput(.normalise)                            ## an exported helper, but with a hidden name
-dput(zs)                                    ## the scale() equivalent
-dput(zq)                                    ## the 'boxplot scaling' (based on quantiles)
+## ---- fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="A one-dimensional KDE of a predictor variable from the Boston data set"----
+
+Criminality <- with(Boston, log(crim))
+kcrim <- kde_1d(Criminality, n = 1024, kernel = demoKde::kernelBiweight)
+kcrim
+plot(kcrim)
+
+## ---- fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="A two-dimensional KDE using two predictors from the Boston data set"----
+Spaciousness <- with(Boston, sqrt(rm))
+kcrimrm <- kde_2d(Criminality, Spaciousness, n = 512, kernel = "opt")
+kcrimrm
+plot(kcrimrm, ## col = hcl.colors(25, rev = TRUE),
+     xlab = expression(italic(Criminality)),
+     ylab = expression(italic(Spaciousness)))
+contour(kcrimrm, col = "dark green", add = TRUE)
+
+## ---- fig.width=10, fig.height=7, fig.align="center", out.width="80%", fig.cap="A two-dimensional KDE presented as a perspective plot"----
+with(kcrimrm, persp(x, 10*y, 3*z, border="transparent", col = "powder blue",
+                    theta = 30, phi = 15, r = 100, scale = FALSE, shade = TRUE, 
+                    xlab = "Criminality", ylab = "Spaciousness", zlab = "kde"))
 
 ## ---- echo=FALSE--------------------------------------------------------------
 setdiff(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sort() %>%  noquote()
