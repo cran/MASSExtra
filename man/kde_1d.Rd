@@ -35,14 +35,14 @@ kde_1d(
 \item{x}{A numeric vector for which the kde is required or (in methods)
 an object of class \code{"kde_1d"}}
 
-\item{bw}{The bandwidth function.  Note this must be an R function.}
+\item{bw}{The bandwidth or the bandwidth function.}
 
 \item{kernel}{The kernel function, specified either as a character string or as
 an R function. Partial matching of the character string is allowed.}
 
 \item{n}{Integer, the number of equally-spaced values in the abscissa of the kde}
 
-\item{limits}{numeric vector of length 2.  Prescribed x-range limits for the 
+\item{limits}{numeric vector of length 2.  Prescribed x-range limits for the
 x-range of the result.  May be infinite, but infinite values will be
 pruned back to an appropriate value as determined by the data.}
 
@@ -67,7 +67,7 @@ A list of results specifying the result of the kde computation, of class \code{"
 A pure R implementation of an approximate one-dimensional KDE, similar
 to \code{\link[stats]{density}} but using a different algorithm not involving
 \code{\link[stats]{fft}}.  Two extra facilities are provided, namely
-(a) the kernel may be given either as a character string to select one of a 
+(a) the kernel may be given either as a character string to select one of a
 number of kernel functions provided, or a user defined R function, and (b) the
 kde may be fitted beyond the prescribed limits for the result, and folded back
 to emulate the effect of having known bounds for the distribution.

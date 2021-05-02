@@ -1,7 +1,7 @@
 Package: MASSExtra
 Type: Package
 Title: Some 'MASS' Enhancements
-Version: 1.1.1
+Version: 1.1.2
 Author: Bill Venables
 Maintainer: Bill Venables <bill.venables@gmail.com>
 Description: Some enhancements, extensions and additions
@@ -22,6 +22,6 @@ RoxygenNote: 7.1.1
 Suggests: knitr, rmarkdown, patchwork, visreg, tidyverse
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2021-03-01 00:52:36 UTC; bill
+Packaged: 2021-05-02 06:57:25 UTC; bill
 Repository: CRAN
-Date/Publication: 2021-03-01 05:20:02 UTC
+Date/Publication: 2021-05-02 07:10:02 UTC

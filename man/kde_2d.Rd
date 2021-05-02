@@ -12,7 +12,7 @@ kde_2d(
   bw = list(x = bw.nrd0, y = bw.nrd0),
   kernel = c("gaussian", "biweight", "cosine", "epanechnikov", "logistic", "optCosine",
     "rectangular", "squaredCosine", "triangular", "tricube", "triweight", "uniform"),
-  n = 256,
+  n = 128,
   x_limits = c(rx[1] - cut * bw["x"], rx[2] + cut * bw["x"]),
   y_limits = c(ry[1] - cut * bw["y"], ry[2] + cut * bw["y"]),
   cut = 1,
@@ -37,7 +37,7 @@ kde_2d(
 to \code{\link[grDevices]{xy.coords}}.  In methods, \code{x} will be
 an object of class \code{"kde_2d"}}
 
-\item{bw}{bandwidths. May be a numeric vector of length 1 or 2, or a function, 
+\item{bw}{bandwidths. May be a numeric vector of length 1 or 2, or a function,
 or list of two bandwidth computation functions.  Short entities will
 be repeated to length 1.  The first relates to the x-coordinate and
 the second to the y.}
@@ -80,10 +80,10 @@ krc <- with(Boston, {
   kde_2d(criminality, spaciousness, n = 128, kernel = "biweight")
 })
 plot(krc, xlab = expression(italic(Criminality)), ylab = expression(italic(Spaciousness)))
-contour(krc, add = TRUE, lwd = 0.5)
-points(sqrt(rm) ~ log(crim), Boston, pch = ".", cex = 2, col = "dark green")
+levs <- hr_levels(krc)
+contour(krc, add = TRUE, levels = levs, labels = names(levs))
 
 with(krc, persp(x, 10*y, 3*z, border="transparent", col = "powder blue",
-                theta = 30, phi = 15, r = 20, scale = FALSE, shade = TRUE, 
+                theta = 30, phi = 15, r = 20, scale = FALSE, shade = TRUE,
                 xlab = "Criminality", ylab = "Spaciousness", zlab = "density"))
 }

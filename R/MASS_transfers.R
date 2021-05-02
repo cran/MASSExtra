@@ -25,6 +25,8 @@ MASS::logtrans
 #' @export
 MASS::lqs
 #' @export
+MASS::mvrnorm
+#' @export
 MASS::negative.binomial
 #' @export
 MASS::polr
