@@ -1,4 +1,4 @@
-4a32379415234f52214f8a0941e17ea9 *DESCRIPTION
+4f076d4286d4be9c4bfb4d0fc937f3c7 *DESCRIPTION
 5f9e72014b3ccb971f0ee1301254fb96 *NAMESPACE
 4575229c37e7264d853e2cc962fb0e3e *R/MASS_transfers.R
 c3d5e45fc7658fde4f5d9564e643d07e *R/avoid.R
@@ -16,9 +16,9 @@ f08764b52421bd8e023c8b973429fc68 *data/Boston.rda
 a7424c1d73a036a0a651d85d295a42d9 *data/Cars93.rda
 055c0a417e2edaa93cfaccced5ed4325 *data/quine.rda
 5e446d6a431933ed972897592217fbd5 *data/whiteside.rda
-7e054f860d2d27d9e1eed2a5242c34a3 *inst/doc/rationale.R
-486e374d1051f44adc95e2a26da6cd60 *inst/doc/rationale.Rmd
-2342e16a3f15dfcb01db44a7adf980b2 *inst/doc/rationale.html
+79611fbca362e6c210dfb47b3091ea56 *inst/doc/rationale.R
+e45e5fea3fd0541ec4fdfba864ab569a *inst/doc/rationale.Rmd
+4b865c15111b94dc9615f207fd54e6a1 *inst/doc/rationale.html
 07b3ba6f4bba25e7949804d7a1bf1ab7 *man/Boston.Rd
 bbb67f13352b65da9e737d74adfe92c2 *man/Cars93.Rd
 67af05b5a9e8b250d2bbc8c0153dbdf2 *man/GIC.Rd
@@ -52,4 +52,4 @@ ffb03ddb21ff43ebe14656b56544f095 *man/which_tri.Rd
 f4e5c810d53ccd410b5a9ec47035513f *man/xy-class.Rd
 73eb5801c0a1f9338dc37d976979880c *man/zs.Rd
 61e33fe81963f85705e9521f9c393969 *vignettes/header.tex
-486e374d1051f44adc95e2a26da6cd60 *vignettes/rationale.Rmd
+e45e5fea3fd0541ec4fdfba864ab569a *vignettes/rationale.Rmd

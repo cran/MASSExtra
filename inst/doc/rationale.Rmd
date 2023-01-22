@@ -420,8 +420,6 @@ with(kcrimrm, persp(x, 10*y, 3*z, border="transparent", col = "powder blue",
                     xlab = "Criminality", ylab = "Spaciousness", zlab = "kde"))
 ```
 
-
-
 # Postamble
 
 In this final section we mainly give a list of functions provided by
@@ -433,7 +431,8 @@ these you will need either to attach the `MASS` package itself, or use
 the qualified form `MASS::<name>`.
 
 ```{r, echo=FALSE}
-setdiff(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sort() %>%  noquote()
+setdiff(getNamespaceExports("MASS"), c("lmwork", getNamespaceExports("MASSExtra"))) %>% 
+  sort() %>%  noquote()
 ```
 
 The following objects _are_ re-exported from the `MASSExtra` package,

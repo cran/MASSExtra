@@ -99,7 +99,8 @@ with(kcrimrm, persp(x, 10*y, 3*z, border="transparent", col = "powder blue",
                     xlab = "Criminality", ylab = "Spaciousness", zlab = "kde"))
 
 ## ---- echo=FALSE--------------------------------------------------------------
-setdiff(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sort() %>%  noquote()
+setdiff(getNamespaceExports("MASS"), c("lmwork", getNamespaceExports("MASSExtra"))) %>% 
+  sort() %>%  noquote()
 
 ## ---- echo=FALSE--------------------------------------------------------------
 intersect(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sort() %>%  noquote()
