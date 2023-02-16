@@ -8,16 +8,17 @@ old_before_plot_new <- getHook("before.plot.new")
 setHook("plot.new", list(), "replace")
 setHook("before.plot.new", rev(old_before_plot_new)[1], "replace")
 old_par <- par(no.readonly = TRUE)
-old_options <- options()
+old_options <- options(show.signif.stars = FALSE)
 
-library(tidyverse)
+library(ggplot2)
 old_theme <- theme_get()
 
 ## ----packages_etc-------------------------------------------------------------
 suppressPackageStartupMessages({
   library(visreg)
   library(knitr)
-  library(tidyverse)
+  library(dplyr)
+  library(ggplot2)
   library(patchwork)
   library(MASSExtra)
 })
@@ -108,7 +109,7 @@ intersect(getNamespaceExports("MASS"), getNamespaceExports("MASSExtra")) %>% sor
 ## ---- echo=FALSE--------------------------------------------------------------
 setdiff(getNamespaceExports("MASSExtra"), getNamespaceExports("MASS")) %>% 
    setdiff(getNamespaceExports("splines")) %>% 
-   grep("^[.]__T", ., invert = TRUE, value = TRUE) %>% ## exclude S4 class objects
+   grep("^[.]__", ., invert = TRUE, value = TRUE) %>% ## exclude S4 class objects
    sort() %>% noquote()
 
 ## ---- echo=FALSE--------------------------------------------------------------
